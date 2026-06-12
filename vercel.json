@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/generate-question",
+      "destination": "/api/generate-question.py"
+    },
+    {
+      "source": "/api/results",
+      "destination": "/api/results.py"
+    }
+  ]
+}

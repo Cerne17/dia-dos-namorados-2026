@@ -1,0 +1,61 @@
+{
+  "config": {
+    "webhookUrl": ""
+  },
+  "letter": {
+    "date": "12 de Junho de 2026",
+    "salutation": "Querida Dudinha,",
+    "paragraphs": [
+      "Desde que te conheci, fiquei meio em choque. Você tem um carão, sempre com carinha de brava, o que me deixou ainda mais cursioso para te conhecer melhor.",
+      "Percebi que estava lascado, antes mesmo de saber se tinha uma chance contigo (por ser um cara extremamente lerdo, admito), mas já tinha começado a sentir saudades de você.",
+      "E depois de saber que era recíproco, eu tive a certeza de que estava ferrado. Pelo menos, estou ferrado com orgulho e quero me ferrar mais e mais a cada dia."
+    ],
+    "signature": "Miguel Cerne 💥"
+  },
+  "datePool": [
+    {
+      "question": "Onde vai ser o nosso encontro dos sonhos?",
+      "category": "local",
+      "options": [
+        "Na praia, com o pé na areia e som do mar",
+        "Na serra, com clima frio e lareira",
+        "Num restaurante super chique que queremos conhecer",
+        "No aconchego do nosso sofá, cheio de cobertas"
+      ],
+      "hint": "Escolha o lugar ideal..."
+    },
+    {
+      "question": "O que nós vamos fazer juntos para nos divertir?",
+      "category": "atividade",
+      "options": [
+        "Maratonar nossos filmes ou séries favoritos",
+        "Cozinhar uma receita nova e complexa juntos",
+        "Ficar conversando a madrugada toda sobre a vida",
+        "Jogar videogame de forma super competitiva (e fofa)"
+      ],
+      "hint": "O que mais combina hoje?"
+    },
+    {
+      "question": "E qual vai ser o banquete perfeito?",
+      "category": "comida",
+      "options": [
+        "Um combinado gigante de sushi",
+        "Pizza artesanal quentinha saindo do forno",
+        "Fondue de queijo e chocolate com frutas",
+        "Vinhos selecionados com uma tábua de queijos"
+      ],
+      "hint": "Hora de escolher a melhor parte!"
+    },
+    {
+      "question": "Qual vai ser a trilha sonora de fundo?",
+      "category": "clima",
+      "options": [
+        "Lo-fi acústico bem calmo e relaxante",
+        "Jazz clássico instrumental e elegante",
+        "MPB romântica e MPB antiga para cantar junto",
+        "Pop e rock acústico para curtir a vibe"
+      ],
+      "hint": "Para definir a atmosfera..."
+    }
+  ]
+}

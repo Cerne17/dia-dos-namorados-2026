@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Duda Herfe - Dia dos Namorados</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Background Particle Canvas -->
+    <canvas id="particles-canvas"></canvas>
+
+
+
+    <!-- Navigation / Top Bar -->
+    <header class="navbar">
+        <div class="logo">M <i class="fas fa-heart pulse"></i> D</div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <div class="badge fade-in">Feliz Dia dos Namorados</div>
+                <h1 class="hero-title fade-in-delay-1">Dudinha, mestra do fut</h1>
+                <p class="hero-subtitle fade-in-delay-2">Feliz dia dos Namorados, espero que goste do programa</p>
+                <div class="hero-scroll-indicator fade-in-delay-3">
+                    <a href="#letter-section" class="scroll-btn">
+                        <span>Ver a surpresa</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Love Letter Section -->
+        <section id="letter-section" class="letter-section">
+            <div class="section-header">
+                <h2>Uma Cartinha para você 😎</h2>
+                <p class="section-desc">Clique no envelope para abrir</p>
+            </div>
+
+            <div class="envelope-wrapper">
+                <div class="envelope" id="love-envelope">
+                    <div class="envelope-flap"></div>
+                    <div class="envelope-pocket"></div>
+                    <div class="letter" id="love-letter">
+                        <div class="letter-content" id="letter-content">
+                            <!-- Populated dynamically from content.json -->
+                        </div>
+                    </div>
+                    <div class="envelope-heart" id="envelope-heart">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- Interactive Quiz / Date Planner Section -->
+        <section id="quiz-section" class="quiz-section">
+            <div class="section-header">
+                <h2>Construa o Nosso Encontro</h2>
+                <p class="section-desc">Monte um date ideal para você e verei se tu terá a honra de realizar rs</p>
+            </div>
+
+            <div class="quiz-container">
+                <div class="quiz-card glass">
+                    <!-- Progress Bar -->
+                    <div class="quiz-progress-bar">
+                        <div class="progress-fill" id="quiz-progress"></div>
+                    </div>
+
+                    <div class="quiz-body" id="quiz-body">
+                        <!-- Content dynamically populated -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Feito com <i class="fas fa-heart text-danger"></i> por Miguel para Dudinha</p>
+        <p class="footer-date">Dia dos Namorados 2026</p>
+    </footer>
+
+    <!-- Main Logic Script -->
+    <script src="app.js"></script>
+</body>
+
+</html>
