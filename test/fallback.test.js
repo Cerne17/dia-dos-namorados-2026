@@ -189,6 +189,42 @@ function testFuzz(runs) {
 }
 
 // ---------------------------------------------------------------------------
+// 3b. MID-QUIZ FAILURE: Gemini answers the first steps, then drops out at a
+// random point; the rest must come from the offline fallback and stay coherent
+// with the theme locked at the (Gemini-phrased) local step.
+// ---------------------------------------------------------------------------
+function testMidQuizFailure(runs) {
+    const order = planner.categoryOrder;
+    const geminiSamples = [
+        'Na praia tomando água de coco', 'Num chalé na serra com lareira',
+        'Jantar chique num restaurante badalado', 'No sofá de casa na coberta',
+        'Algo surpreendente e fora da caixa',
+    ];
+    let pass = 0, total = 0;
+    for (let i = 0; i < runs; i++) {
+        const N = MIN_QUESTIONS + rand(MAX_QUESTIONS - MIN_QUESTIONS + 1);
+        const switchAt = 1 + rand(N - 1); // Gemini handles steps [0..switchAt-1], fallback the rest
+        const where = `mid#${i}(N=${N},cai@${switchAt})`;
+        const before = failures.length;
+
+        // Step 0 (local) answered by Gemini -> theme inferred once.
+        let theme = PlannerCore.inferTheme(planner, pick(geminiSamples));
+        if (!planner.themes[theme]) { fail(where, `tema inferido inválido '${theme}'`); total++; continue; }
+
+        let okRun = true;
+        for (let idx = 1; idx < N; idx++) {
+            const cat = order[idx];
+            if (idx < switchAt) continue; // Gemini still up: its output isn't our concern here
+            const q = PlannerCore.buildFallbackQuestion(planner, cat, theme, null);
+            if (!validateStep(where, q, cat, theme)) { okRun = false; break; }
+        }
+        total++;
+        if (okRun && failures.length === before) pass++;
+    }
+    return { pass, total };
+}
+
+// ---------------------------------------------------------------------------
 // RUN + REPORT
 // ---------------------------------------------------------------------------
 const FUZZ_RUNS = 50000;
@@ -217,6 +253,11 @@ console.log(`3) FUZZ ALEATÓRIO (${FUZZ_RUNS} encontros, menu + gemini) ... ${fu
 console.log(`   completos: ${fz.pass}/${fz.total}`);
 console.log(`   modo menu  : ${fz.byMode.menu.ok} ok / ${fz.byMode.menu.fail} falha`);
 console.log(`   modo gemini: ${fz.byMode.gemini.ok} ok / ${fz.byMode.gemini.fail} falha\n`);
+
+const mid = testMidQuizFailure(20000);
+const midFails = failures.length - intFails - detFails - fuzzFails;
+console.log(`4) QUEDA DO GEMINI NO MEIO (20000 encontros, troca em ponto aleatório) ... ${midFails === 0 ? 'OK' : midFails + ' FALHA(S)'}`);
+console.log(`   completos e coerentes: ${mid.pass}/${mid.total}\n`);
 
 console.log('--------------------------------------------------------');
 console.log(`ASSERTIONS executadas: ${checks}`);

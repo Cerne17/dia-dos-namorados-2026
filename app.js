@@ -180,6 +180,9 @@ envelopeWrapper.addEventListener('click', () => {
 const categoriesOrder = ['local', 'atividade', 'comida', 'bebida', 'clima', 'sobremesa'];
 const MIN_QUESTIONS = 3;
 const MAX_QUESTIONS = 6;
+// If Gemini doesn't answer within this window, abort and use the offline
+// fallback so the planner never freezes on a slow/hung request.
+const GEMINI_CLIENT_TIMEOUT_MS = 9000;
 
 function randomQuestionCount() {
     const span = MAX_QUESTIONS - MIN_QUESTIONS + 1;
@@ -220,23 +223,32 @@ async function fetchNextQuestion() {
     `;
 
     try {
-        // POST previous answers so Gemini can customize the next question
-        const response = await fetch('/api/generate-question', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ answers: userAnswers })
-        });
+        // Cap how long the Dudinha stares at the spinner: if Gemini is slow or
+        // hung, abort and drop to the (instant, coherent) offline fallback
+        // instead of waiting on the server's longer timeout.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), GEMINI_CLIENT_TIMEOUT_MS);
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data && data.question && data.options) {
-                currentQuestion = data;
-                renderCurrentQuestion();
-                return;
-            }
+        let data = null;
+        try {
+            const response = await fetch('/api/generate-question', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: userAnswers }),
+                signal: controller.signal
+            });
+            if (response.ok) data = await response.json();
+        } finally {
+            clearTimeout(timeoutId);
+        }
+
+        if (data && data.question && Array.isArray(data.options) && data.options.length) {
+            currentQuestion = data;
+            renderCurrentQuestion();
+            return;
         }
     } catch (e) {
-        console.warn("Falha ao carregar API do Gemini, usando fallback local:", e);
+        console.warn("Falha/timeout no Gemini, usando fallback local:", e);
     }
 
     // Themed local fallback (coherent with the date "vibe").
