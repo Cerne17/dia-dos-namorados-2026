@@ -1,6 +1,12 @@
 from http.server import BaseHTTPRequestHandler
 import json
+import os
+import sys
 
+# Ensure the sibling _shared.py is importable regardless of the runtime's
+# working directory (Vercel's Python runtime doesn't always put the function's
+# own folder on sys.path).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import persist_results
 
 

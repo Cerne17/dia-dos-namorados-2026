@@ -1,5 +1,10 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/*.py": {
+      "includeFiles": "api/_shared.py"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/generate-question",
