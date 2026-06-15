@@ -60,23 +60,30 @@ def generate_next_question(api_key, previous_answers):
         "TOM: natural, leve e descontraído, como uma amiga animada conversando — com um toque romântico e bom humor, mas SEM exagero. "
         "EVITE: linguagem cafona ou melosa, clichês de cupido, bordões repetitivos (NÃO comece com 'Ah, Dudinha...', 'Meu coração de cupido...' e parecidos), adjetivos grudentos empilhados ('mágico', 'dos sonhos', 'perfeito', 'derretendo'). "
         "Seja direto, gostoso de ler e com personalidade. No máximo 1 emoji por opção (e só se ficar natural; pode não ter nenhum).\n\n"
-        f"Gere a próxima pergunta de planejamento em português para a categoria '{next_category}'. "
-        "Leia as escolhas anteriores e gere uma pergunta curta e 4 alternativas que conversem com o que a Duda já escolheu.\n\n"
+        "VARIEDADE (muito importante): a cada geração, traga alternativas BEM diferentes das óbvias e diferentes entre si. "
+        "Misture o esperado com o inusitado e espontâneo — surpreenda. Fuja do lugar-comum, evite sempre as mesmas 4 ideias. "
+        "Pense em opções específicas e com cara de vida real (lugares, pratos, atividades concretas), não genéricas.\n\n"
+        "Exemplos do estilo e da VARIEDADE que queremos (são só inspiração de formato e energia — NÃO copie, crie outras):\n\n"
+        "Exemplo A (categoria 'local', sem escolhas anteriores):\n"
+        "{\"question\": \"Bora decidir o cenário: onde rola esse encontro?\", \"category\": \"local\", "
+        "\"options\": [\"Rooftop com vista da cidade e luzinhas\", \"Trilha curta até uma cachoeira escondida\", \"Piquenique de toalha xadrez no parque\", \"Bar de vinho escondido numa viela\"], "
+        "\"hint\": \"Pode ser do mais agitado ao mais sossegado, escolhe o clima\"}\n\n"
+        "Exemplo B (categoria 'atividade', depois que ela escolheu 'praia'):\n"
+        "{\"question\": \"Já que é praia, o que vocês aprontam por lá?\", \"category\": \"atividade\", "
+        "\"options\": [\"Caçar o pôr do sol com a câmera na mão\", \"Construir um castelo de areia ridiculamente grande 🏖️\", \"Stand up paddle e cair na água rindo\", \"Rede na sombra lendo um pro outro\"], "
+        "\"hint\": \"Da adrenalina à preguiça boa, tem de tudo\"}\n\n"
+        "Exemplo C (categoria 'comida', depois de 'sofá' + 'maratona de série'):\n"
+        "{\"question\": \"Maratona pede companhia certa: o que vai de comida?\", \"category\": \"comida\", "
+        "\"options\": [\"Rodízio de pizza no capricho\", \"Tábua de petiscos pra beliscar a noite toda\", \"Miojo gourmet incrementado (sem julgamentos)\", \"Sushi pra dividir no sofá\"], "
+        "\"hint\": \"Combina com episódio atrás de episódio\"}\n\n"
+        f"Agora gere a PRÓXIMA pergunta, em português, para a categoria '{next_category}'. "
+        "Leia as escolhas anteriores e conecte a pergunta e as 4 alternativas ao que a Duda já escolheu.\n\n"
         f"{history_str}\n"
-        "Exemplos de personalização:\n"
-        "- Se a Duda escolheu o 'sofá', as atividades seguintes envolvem ficar em casa (maratona de série, jogo, receita preguiçosa).\n"
-        "- Se ela escolheu 'praia', as comidas combinam com praia (água de coco, piquenique na areia, peixe).\n"
-        "- Se ela escolheu 'restaurante chique', as comidas combinam com um jantar mais requintado.\n\n"
-        "Retorne apenas um objeto JSON com esta estrutura (sem markdown):\n"
+        "Retorne APENAS um objeto JSON com esta estrutura (sem markdown):\n"
         "{\n"
         "  \"question\": \"Pergunta curta e natural, conectada às escolhas anteriores (se houver)\",\n"
         f"  \"category\": \"{next_category}\",\n"
-        "  \"options\": [\n"
-        "    \"Alternativa 1 (natural, no máx 1 emoji)\",\n"
-        "    \"Alternativa 2\",\n"
-        "    \"Alternativa 3\",\n"
-        "    \"Alternativa 4\"\n"
-        "  ],\n"
+        "  \"options\": [\"Alternativa 1\", \"Alternativa 2\", \"Alternativa 3\", \"Alternativa 4\"],\n"
         "  \"hint\": \"Uma frase curta e leve comentando a escolha anterior (se houver), sem ser melosa\"\n"
         "}"
     )
@@ -90,7 +97,10 @@ def generate_next_question(api_key, previous_answers):
             # creative JSON, so disable it for a big speedup.
             "thinkingConfig": {"thinkingBudget": 0},
             "maxOutputTokens": 800,
-            "temperature": 0.85,
+            # Higher temperature + topP for more spontaneous, varied options.
+            # The few-shot examples keep the tone in check despite the heat.
+            "temperature": 1.2,
+            "topP": 0.97,
         },
     }
 
