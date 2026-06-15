@@ -1,12 +1,9 @@
 {
-  "config": {
-    "webhookUrl": ""
-  },
   "letter": {
     "date": "12 de Junho de 2026",
     "salutation": "Querida Dudinha,",
     "paragraphs": [
-      "Desde que te conheci, fiquei meio em choque. Você tem um carão, sempre com carinha de brava, o que me deixou ainda mais cursioso para te conhecer melhor.",
+      "Desde que te conheci, fiquei meio em choque. Você tem um carão, sempre com carinha de brava, o que me deixou ainda mais curioso para te conhecer melhor.",
       "Percebi que estava lascado, antes mesmo de saber se tinha uma chance contigo (por ser um cara extremamente lerdo, admito), mas já tinha começado a sentir saudades de você.",
       "E depois de saber que era recíproco, eu tive a certeza de que estava ferrado. Pelo menos, estou ferrado com orgulho e quero me ferrar mais e mais a cada dia."
     ],
@@ -56,6 +53,28 @@
         "Pop e rock acústico para curtir a vibe"
       ],
       "hint": "Para definir a atmosfera..."
+    },
+    {
+      "question": "E para brindar o nosso amor, o que vamos beber?",
+      "category": "bebida",
+      "options": [
+        "Um vinho tinto encorpado e aconchegante",
+        "Drinks coloridos e refrescantes",
+        "Suco natural geladinho e água de coco",
+        "Um chocolate quente bem cremoso"
+      ],
+      "hint": "Escolha o brinde perfeito..."
+    },
+    {
+      "question": "Qual sobremesa fecha o encontro com chave de ouro?",
+      "category": "sobremesa",
+      "options": [
+        "Petit gateau com sorvete derretendo por cima",
+        "Morangos frescos mergulhados no chocolate",
+        "Cheesecake de frutas vermelhas",
+        "Brigadeiro de colher para dividir os dois"
+      ],
+      "hint": "O docinho do final..."
     }
   ]
 }

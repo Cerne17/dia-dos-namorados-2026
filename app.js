@@ -174,9 +174,19 @@ envelopeWrapper.addEventListener('click', () => {
 
 
 // --- Interactive Date Planner & Results ---
-const totalQuestionsCount = 4;
-const categoriesOrder = ['local', 'atividade', 'comida', 'clima'];
-let pageConfig = {};
+// Full ordered category pool (must match CATEGORIES in api/_shared.py). Each
+// session uses the first N of these, where N is randomized per run so some
+// dates are quick (3 steps) and others elaborate (6 steps).
+const categoriesOrder = ['local', 'atividade', 'comida', 'bebida', 'clima', 'sobremesa'];
+const MIN_QUESTIONS = 3;
+const MAX_QUESTIONS = 6;
+
+function randomQuestionCount() {
+    const span = MAX_QUESTIONS - MIN_QUESTIONS + 1;
+    return Math.floor(Math.random() * span) + MIN_QUESTIONS;
+}
+
+let totalQuestionsCount = randomQuestionCount();
 let currentQuestionIndex = 0;
 let currentQuestion = null;
 let userAnswers = [];
@@ -239,22 +249,41 @@ function renderCurrentQuestion() {
     const progressPercent = (currentQuestionIndex / (totalQuestionsCount + 1)) * 100;
     quizProgress.style.width = `${progressPercent}%`;
 
-    quizBody.innerHTML = `
-        <div class="quiz-question-number">Passo ${currentQuestionIndex + 1} de ${totalQuestionsCount + 1}</div>
-        <h3 class="quiz-question">${currentQuestion.question}</h3>
-        <div class="quiz-options">
-            ${currentQuestion.options.map((opt, i) => `
-                <button class="option-btn" data-index="${i}">${opt}</button>
-            `).join('')}
-        </div>
-        ${currentQuestion.hint ? `<p style="font-size: 0.85rem; color: var(--accent); margin-top: 20px; font-style: italic; font-weight: 500; font-family: var(--font-body); text-align: center;"><i class="fas fa-wand-magic-sparkles"></i> ${currentQuestion.hint}</p>` : ''}
-    `;
+    // Build the DOM with textContent for any model-derived strings
+    // (question / options / hint) to prevent HTML injection from the API.
+    quizBody.replaceChildren();
 
-    // Add click listeners to option buttons
-    const optionBtns = quizBody.querySelectorAll('.option-btn');
-    optionBtns.forEach(btn => {
+    const stepLabel = document.createElement('div');
+    stepLabel.className = 'quiz-question-number';
+    stepLabel.textContent = `Passo ${currentQuestionIndex + 1} de ${totalQuestionsCount + 1}`;
+    quizBody.appendChild(stepLabel);
+
+    const questionEl = document.createElement('h3');
+    questionEl.className = 'quiz-question';
+    questionEl.textContent = currentQuestion.question;
+    quizBody.appendChild(questionEl);
+
+    const optionsWrap = document.createElement('div');
+    optionsWrap.className = 'quiz-options';
+    currentQuestion.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.dataset.index = i;
+        btn.textContent = opt;
         btn.addEventListener('click', (e) => handleAnswer(e, btn));
+        optionsWrap.appendChild(btn);
     });
+    quizBody.appendChild(optionsWrap);
+
+    if (currentQuestion.hint) {
+        const hintEl = document.createElement('p');
+        hintEl.style.cssText = 'font-size: 0.85rem; color: var(--accent); margin-top: 20px; font-style: italic; font-weight: 500; font-family: var(--font-body); text-align: center;';
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-wand-magic-sparkles';
+        hintEl.appendChild(icon);
+        hintEl.appendChild(document.createTextNode(' ' + currentQuestion.hint));
+        quizBody.appendChild(hintEl);
+    }
 }
 
 function handleAnswer(e, clickedBtn) {
@@ -320,9 +349,9 @@ async function sendResults(note) {
     if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando com o Miguel...';
 
     let savedLocally = false;
-    let sentToWebhook = false;
 
-    // 1. Send to local Python custom server API
+    // Single server-side endpoint fans out to Discord + Upstash. The webhook
+    // URL and storage token never touch the browser.
     try {
         const response = await fetch('/api/results', {
             method: 'POST',
@@ -331,51 +360,12 @@ async function sendResults(note) {
         });
         if (response.ok) savedLocally = true;
     } catch (e) {
-        console.warn("Servidor local não respondeu.");
-    }
-
-    // 2. Send to Webhook
-    if (pageConfig && pageConfig.webhookUrl) {
-        try {
-            let bodyData;
-
-            // Format specially for Discord embeds
-            if (pageConfig.webhookUrl.includes("discord.com")) {
-                const fields = userAnswers.map((ans, idx) => ({
-                    name: `✨ Passo ${idx + 1}: ${ans.question}`,
-                    value: `Escolhida: **${ans.selectedOption}**`,
-                    inline: false
-                }));
-
-                bodyData = JSON.stringify({
-                    username: "Cupido Valentin",
-                    avatar_url: "https://images.unsplash.com/photo-1518199266791-5375a83190b7",
-                    embeds: [{
-                        title: "❤️ A Dudinha acabou de planejar um encontro dos sonhos!",
-                        description: `**Nota Especial:** _"${payload.note}"_`,
-                        color: 16731501, // Soft rose-pink
-                        fields: fields,
-                        footer: { text: "Preparando o romance - Dia dos Namorados" }
-                    }]
-                });
-            } else {
-                bodyData = JSON.stringify(payload);
-            }
-
-            const res = await fetch(pageConfig.webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: bodyData
-            });
-            if (res.ok) sentToWebhook = true;
-        } catch (e) {
-            console.error("Falha ao enviar webhook:", e);
-        }
+        console.warn("Servidor não respondeu.");
     }
 
     // Update status text on completion
     if (statusText) {
-        if (savedLocally || sentToWebhook) {
+        if (savedLocally) {
             statusText.innerHTML = '<i class="fas fa-check-circle" style="color: #2ec4b6;"></i> Encontro enviado! Prepare-se para o melhor momento. ❤️';
         } else {
             statusText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--accent);"></i> Salvo com sucesso! Mostre suas respostas para o Miguel.';
@@ -411,6 +401,7 @@ function showQuizResults(note) {
     document.getElementById('restart-planner').addEventListener('click', () => {
         currentQuestionIndex = 0;
         userAnswers = [];
+        totalQuestionsCount = randomQuestionCount(); // fresh length each replay
         loadQuestion();
         playTone(523.25, 0.25);
     });
@@ -423,10 +414,6 @@ async function loadPageContent() {
         const localResponse = await fetch('content.json');
         if (!localResponse.ok) throw new Error("Falha ao abrir content.json");
         const data = await localResponse.json();
-
-        if (data.config) {
-            pageConfig = data.config;
-        }
 
         // 1. Populate Letter
         const letterContent = document.getElementById('letter-content');
