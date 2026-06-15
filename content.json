@@ -9,72 +9,210 @@
     ],
     "signature": "Miguel Cerne 💥"
   },
-  "datePool": [
-    {
-      "question": "Onde vai ser o nosso encontro dos sonhos?",
-      "category": "local",
-      "options": [
-        "Na praia, com o pé na areia e som do mar",
-        "Na serra, com clima frio e lareira",
-        "Num restaurante super chique que queremos conhecer",
-        "No aconchego do nosso sofá, cheio de cobertas"
-      ],
-      "hint": "Escolha o lugar ideal..."
+  "fallbackPlanner": {
+    "categoryOrder": ["local", "atividade", "comida", "bebida", "clima", "sobremesa"],
+    "questions": {
+      "local": "Pra começar, onde rola esse encontro?",
+      "atividade": "E o que a gente vai fazer pra se divertir?",
+      "comida": "Bateu a fome: o que vai de comida?",
+      "bebida": "E pra beber, o que não pode faltar?",
+      "clima": "Qual vai ser a trilha sonora do rolê?",
+      "sobremesa": "Pra fechar com chave de ouro, qual sobremesa?"
     },
-    {
-      "question": "O que nós vamos fazer juntos para nos divertir?",
-      "category": "atividade",
-      "options": [
-        "Maratonar nossos filmes ou séries favoritos",
-        "Cozinhar uma receita nova e complexa juntos",
-        "Ficar conversando a madrugada toda sobre a vida",
-        "Jogar videogame de forma super competitiva (e fofa)"
-      ],
-      "hint": "O que mais combina hoje?"
-    },
-    {
-      "question": "E qual vai ser o banquete perfeito?",
-      "category": "comida",
-      "options": [
-        "Um combinado gigante de sushi",
-        "Pizza artesanal quentinha saindo do forno",
-        "Fondue de queijo e chocolate com frutas",
-        "Vinhos selecionados com uma tábua de queijos"
-      ],
-      "hint": "Hora de escolher a melhor parte!"
-    },
-    {
-      "question": "Qual vai ser a trilha sonora de fundo?",
-      "category": "clima",
-      "options": [
-        "Lo-fi acústico bem calmo e relaxante",
-        "Jazz clássico instrumental e elegante",
-        "MPB romântica e MPB antiga para cantar junto",
-        "Pop e rock acústico para curtir a vibe"
-      ],
-      "hint": "Para definir a atmosfera..."
-    },
-    {
-      "question": "E para brindar o nosso amor, o que vamos beber?",
-      "category": "bebida",
-      "options": [
-        "Um vinho tinto encorpado e aconchegante",
-        "Drinks coloridos e refrescantes",
-        "Suco natural geladinho e água de coco",
-        "Um chocolate quente bem cremoso"
-      ],
-      "hint": "Escolha o brinde perfeito..."
-    },
-    {
-      "question": "Qual sobremesa fecha o encontro com chave de ouro?",
-      "category": "sobremesa",
-      "options": [
-        "Petit gateau com sorvete derretendo por cima",
-        "Morangos frescos mergulhados no chocolate",
-        "Cheesecake de frutas vermelhas",
-        "Brigadeiro de colher para dividir os dois"
-      ],
-      "hint": "O docinho do final..."
+    "localOptions": [
+      { "label": "Na praia, com o pé na areia e som do mar", "theme": "praia" },
+      { "label": "Numa praia paradisíaca curtindo o dia todo", "theme": "praia" },
+      { "label": "Numa ilha deserta só nós dois", "theme": "praia" },
+      { "label": "Na serra, com clima frio e lareira", "theme": "serra" },
+      { "label": "Numa pousada aconchegante no meio do mato", "theme": "serra" },
+      { "label": "Numa cabana com vista pra montanha", "theme": "serra" },
+      { "label": "Num restaurante super chique que a gente quer conhecer", "theme": "chique" },
+      { "label": "Numa noite sofisticada pela cidade", "theme": "chique" },
+      { "label": "Num rooftop com vista e luzinhas", "theme": "chique" },
+      { "label": "No aconchego do nosso sofá, cheio de cobertas", "theme": "casa" },
+      { "label": "Em casa mesmo, no nosso cantinho", "theme": "casa" },
+      { "label": "Numa noite preguiçosa de pijama", "theme": "casa" }
+    ],
+    "themes": {
+      "praia": {
+        "atividade": [
+          "Caçar o pôr do sol com a câmera na mão",
+          "Stand up paddle e cair na água rindo",
+          "Construir um castelo de areia ridiculamente grande",
+          "Caminhar na praia catando conchas",
+          "Mergulho com snorkel vendo os peixinhos",
+          "Vôlei de praia improvisado",
+          "Rede na sombra lendo um pro outro",
+          "Andar de caiaque até uma praia escondida"
+        ],
+        "comida": [
+          "Peixe grelhado na beira da praia",
+          "Espetinho de camarão na barraca",
+          "Açaí na tigela bem gelado",
+          "Porção de isca de peixe pra dividir",
+          "Piquenique de frutas na areia",
+          "Pastel de feira com caldo de cana",
+          "Moqueca caprichada num restaurante à beira-mar"
+        ],
+        "bebida": [
+          "Água de coco geladinha direto do coco",
+          "Caipirinha de limão na barraca",
+          "Suco de frutas tropicais",
+          "Cerveja estupidamente gelada",
+          "Drink de melancia refrescante",
+          "Limonada suíça bem cítrica"
+        ],
+        "clima": [
+          "Reggae de fundo curtindo a brisa",
+          "Pop praiano animado",
+          "Só o som das ondas, sem playlist",
+          "Lo-fi tropical relaxante",
+          "MPB litorânea pra cantar junto",
+          "Surf music pra dar aquele astral"
+        ],
+        "sobremesa": [
+          "Sorvete de casquinha derretendo no sol",
+          "Picolé de frutas na praia",
+          "Salada de frutas com leite condensado",
+          "Churros recheado quentinho",
+          "Açaí com granola e banana",
+          "Cocada cremosa da barraca"
+        ]
+      },
+      "serra": {
+        "atividade": [
+          "Maratona de filme com a lareira acesa",
+          "Caminhada na trilha com neblina",
+          "Banho de cachoeira gelada (coragem!)",
+          "Ficar de pijama jogando jogo de tabuleiro",
+          "Passeio de mãos dadas pelo centrinho",
+          "Observar as estrelas enrolados na manta",
+          "Andar a cavalo pela fazenda",
+          "Colher morangos numa plantação"
+        ],
+        "comida": [
+          "Fondue de queijo borbulhando",
+          "Caldo quentinho num restaurante rústico",
+          "Pinhão assado na fogueira",
+          "Truta na brasa",
+          "Café da manhã reforçado na pousada",
+          "Raclette com batatinhas",
+          "Sopa de cebola gratinada"
+        ],
+        "bebida": [
+          "Vinho tinto pra esquentar",
+          "Chocolate quente bem cremoso",
+          "Quentão de gengibre",
+          "Chá com mel à noite",
+          "Café coado fresquinho",
+          "Vinho quente com canela"
+        ],
+        "clima": [
+          "Jazz suave perto da lareira",
+          "Folk acústico aconchegante",
+          "MPB antiga e um vinil chiando",
+          "Indie tranquilo pra conversar",
+          "Só o barulho da chuva lá fora",
+          "Violão dedilhado de fundo"
+        ],
+        "sobremesa": [
+          "Fondue de chocolate com morango",
+          "Petit gateau com sorvete",
+          "Cuca alemã quentinha",
+          "Banana caramelizada com canela",
+          "Torta de pinhão da região",
+          "Quentão de chocolate com marshmallow"
+        ]
+      },
+      "chique": {
+        "atividade": [
+          "Jantar à luz de velas num restaurante badalado",
+          "Dançar numa balada mais sofisticada",
+          "Teatro ou um show de jazz ao vivo",
+          "Degustação de vinhos guiada",
+          "Drinks num bar de coquetelaria autoral",
+          "Passeio vendo a cidade iluminada",
+          "Noite de ópera ou concerto"
+        ],
+        "comida": [
+          "Menu degustação de vários tempos",
+          "Risoto cremoso de trufas",
+          "Massa fresca artesanal",
+          "Carne nobre no ponto perfeito",
+          "Frutos do mar caprichados",
+          "Sushi premium no balcão",
+          "Couvert com queijos e geleias finas"
+        ],
+        "bebida": [
+          "Espumante brindando a noite",
+          "Vinho selecionado pela casa",
+          "Coquetel autoral da coquetelaria",
+          "Whisky envelhecido pra fechar",
+          "Negroni clássico",
+          "Champanhe pra comemorar"
+        ],
+        "clima": [
+          "Jazz ao vivo elegante",
+          "Bossa nova sofisticada",
+          "Soul e R&B suaves",
+          "Piano instrumental ambiente",
+          "Eletrônica chill discreta",
+          "MPB clássica e refinada"
+        ],
+        "sobremesa": [
+          "Crème brûlée estalando a casquinha",
+          "Cheesecake de frutas vermelhas",
+          "Petit gateau com calda quente",
+          "Macarons coloridos",
+          "Tiramisù caprichado",
+          "Mousse de chocolate belga"
+        ]
+      },
+      "casa": {
+        "atividade": [
+          "Maratona da série favorita debaixo da coberta",
+          "Cozinhar uma receita nova juntos",
+          "Torneio de videogame super competitivo",
+          "Noite de jogos de tabuleiro",
+          "Construir um forte de almofadas",
+          "Karaokê de sala sem vergonha nenhuma",
+          "Sessão de fotos bobas no celular",
+          "Montar um quebra-cabeça gigante"
+        ],
+        "comida": [
+          "Rodízio de pizza no capricho",
+          "Tábua de petiscos pra beliscar a noite toda",
+          "Miojo gourmet incrementado (sem julgamentos)",
+          "Hambúrguer caseiro na chapa",
+          "Macarrão à carbonara feito em casa",
+          "Tacos pra montar do jeito de cada um",
+          "Esfihas e quibes da esquina"
+        ],
+        "bebida": [
+          "Vinho aberto no sofá",
+          "Refrigerante gelado com a pizza",
+          "Suco natural batido na hora",
+          "Cerveja artesanal pra dividir",
+          "Chá quentinho de canela",
+          "Milk-shake feito em casa"
+        ],
+        "clima": [
+          "Lo-fi de fundo bem tranquilo",
+          "Playlist das nossas músicas",
+          "Pop animado pra cantar alto",
+          "Rock acústico relax",
+          "Trilha sonora do filme da vez",
+          "R&B suave pra namorar"
+        ],
+        "sobremesa": [
+          "Brigadeiro de colher pra dividir",
+          "Sorvete direto do pote",
+          "Bolo de caneca no micro-ondas",
+          "Cookies quentinhos do forno",
+          "Pipoca doce pro filme",
+          "Banana com Nutella na frigideira"
+        ]
+      }
     }
-  ]
+  }
 }

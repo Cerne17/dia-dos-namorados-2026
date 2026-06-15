@@ -190,10 +190,49 @@ let totalQuestionsCount = randomQuestionCount();
 let currentQuestionIndex = 0;
 let currentQuestion = null;
 let userAnswers = [];
-let localDatePool = [];
+let localPlanner = null;   // themed fallback tree from content.json
+let currentTheme = null;   // date "vibe" set by the first (local) choice
 
 const quizBody = document.getElementById('quiz-body');
 const quizProgress = document.getElementById('quiz-progress');
+
+function shuffle(arr) {
+    return [...arr].sort(() => Math.random() - 0.5);
+}
+
+// Map a local choice (even one phrased by Gemini) to a fallback theme, so if
+// Gemini drops out mid-quiz the offline questions stay coherent with the vibe.
+function inferTheme(text) {
+    const t = (text || '').toLowerCase();
+    if (/praia|mar |areia|coco|ilha|litor|snorkel/.test(t)) return 'praia';
+    if (/serra|montanha|frio|lareira|pousada|cabana|mato|neblina|cachoeira/.test(t)) return 'serra';
+    if (/chique|sofistic|restaurante|requintad|elegante|balada|rooftop|badalad/.test(t)) return 'chique';
+    if (/sof[áa]|casa|cobert|cantinho|pijama|pregui/.test(t)) return 'casa';
+    // Unknown: pick a random theme so the date still flows.
+    const themes = localPlanner ? Object.keys(localPlanner.themes) : ['casa'];
+    return themes[Math.floor(Math.random() * themes.length)];
+}
+
+// Build a coherent fallback question from the themed tree in content.json.
+function buildFallbackQuestion(category) {
+    if (!localPlanner) return null;
+    const question = localPlanner.questions[category];
+
+    if (category === 'local') {
+        const picked = shuffle(localPlanner.localOptions).slice(0, 4);
+        return {
+            question,
+            category,
+            options: picked.map(o => o.label),
+            _themes: picked.map(o => o.theme), // parallel to options, for handleAnswer
+        };
+    }
+
+    const theme = currentTheme || inferTheme(userAnswers[0] && userAnswers[0].selectedOption);
+    const pool = (localPlanner.themes[theme] && localPlanner.themes[theme][category]) || [];
+    if (!pool.length) return null;
+    return { question, category, options: shuffle(pool).slice(0, 4) };
+}
 
 async function fetchNextQuestion() {
     // Show loading spinner
@@ -228,17 +267,12 @@ async function fetchNextQuestion() {
         console.warn("Falha ao carregar API do Gemini, usando fallback local:", e);
     }
 
-    // Local Fallback from Pool
+    // Themed local fallback (coherent with the date "vibe").
     const category = categoriesOrder[currentQuestionIndex];
-    const fallbackQ = localDatePool.find(q => q.category === category);
+    const fallbackQ = buildFallbackQuestion(category);
 
     if (fallbackQ) {
-        // Shuffle options to keep it randomized
-        const shuffledOptions = [...fallbackQ.options].sort(() => Math.random() - 0.5);
-        currentQuestion = {
-            ...fallbackQ,
-            options: shuffledOptions
-        };
+        currentQuestion = fallbackQ;
         renderCurrentQuestion();
     } else {
         console.error("Nenhuma pergunta fallback encontrada para a categoria:", category);
@@ -294,11 +328,20 @@ function handleAnswer(e, clickedBtn) {
     optionBtns.forEach(btn => btn.disabled = true);
     clickedBtn.classList.add('correct'); // Highlight choice
 
+    const selectedOption = currentQuestion.options[selectedIdx];
+
+    // The first (local) choice locks the date's theme, keeping any later
+    // fallback questions coherent. Prefer the tagged theme; otherwise infer.
+    if (currentQuestion.category === 'local') {
+        currentTheme = (currentQuestion._themes && currentQuestion._themes[selectedIdx])
+            || inferTheme(selectedOption);
+    }
+
     // Track user selection
     userAnswers.push({
         question: currentQuestion.question,
         category: currentQuestion.category,
-        selectedOption: currentQuestion.options[selectedIdx]
+        selectedOption: selectedOption
     });
 
     playTone(659.25, 0.25); // romantic note
@@ -401,6 +444,7 @@ function showQuizResults(note) {
     document.getElementById('restart-planner').addEventListener('click', () => {
         currentQuestionIndex = 0;
         userAnswers = [];
+        currentTheme = null;
         totalQuestionsCount = randomQuestionCount(); // fresh length each replay
         loadQuestion();
         playTone(523.25, 0.25);
@@ -427,9 +471,9 @@ async function loadPageContent() {
             `;
         }
 
-        // 2. Fetch first question
-        if (data.datePool) {
-            localDatePool = data.datePool;
+        // 2. Load the themed fallback tree
+        if (data.fallbackPlanner) {
+            localPlanner = data.fallbackPlanner;
         }
 
         // Start date planner flow
