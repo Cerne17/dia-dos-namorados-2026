@@ -196,43 +196,15 @@ let currentTheme = null;   // date "vibe" set by the first (local) choice
 const quizBody = document.getElementById('quiz-body');
 const quizProgress = document.getElementById('quiz-progress');
 
-function shuffle(arr) {
-    return [...arr].sort(() => Math.random() - 0.5);
-}
-
-// Map a local choice (even one phrased by Gemini) to a fallback theme, so if
-// Gemini drops out mid-quiz the offline questions stay coherent with the vibe.
-function inferTheme(text) {
-    const t = (text || '').toLowerCase();
-    if (/praia|mar |areia|coco|ilha|litor|snorkel/.test(t)) return 'praia';
-    if (/serra|montanha|frio|lareira|pousada|cabana|mato|neblina|cachoeira/.test(t)) return 'serra';
-    if (/chique|sofistic|restaurante|requintad|elegante|balada|rooftop|badalad/.test(t)) return 'chique';
-    if (/sof[áa]|casa|cobert|cantinho|pijama|pregui/.test(t)) return 'casa';
-    // Unknown: pick a random theme so the date still flows.
-    const themes = localPlanner ? Object.keys(localPlanner.themes) : ['casa'];
-    return themes[Math.floor(Math.random() * themes.length)];
-}
-
-// Build a coherent fallback question from the themed tree in content.json.
-function buildFallbackQuestion(category) {
-    if (!localPlanner) return null;
-    const question = localPlanner.questions[category];
-
-    if (category === 'local') {
-        const picked = shuffle(localPlanner.localOptions).slice(0, 4);
-        return {
-            question,
-            category,
-            options: picked.map(o => o.label),
-            _themes: picked.map(o => o.theme), // parallel to options, for handleAnswer
-        };
-    }
-
-    const theme = currentTheme || inferTheme(userAnswers[0] && userAnswers[0].selectedOption);
-    const pool = (localPlanner.themes[theme] && localPlanner.themes[theme][category]) || [];
-    if (!pool.length) return null;
-    return { question, category, options: shuffle(pool).slice(0, 4) };
-}
+// Pure fallback logic lives in planner-core.js (shared with the test suite).
+const inferTheme = (text) => PlannerCore.inferTheme(localPlanner, text);
+const buildFallbackQuestion = (category) =>
+    PlannerCore.buildFallbackQuestion(
+        localPlanner,
+        category,
+        currentTheme,
+        userAnswers[0] && userAnswers[0].selectedOption
+    );
 
 async function fetchNextQuestion() {
     // Show loading spinner
