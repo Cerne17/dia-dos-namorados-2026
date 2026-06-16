@@ -96,6 +96,27 @@
                 </div>
             </div>
         </section>
+        <!-- Meus Encontros (only revealed when a valid token is in the URL) -->
+        <section id="dates-section" class="quiz-section" style="display: none;">
+            <div class="section-header">
+                <h2>Os Nossos Encontros</h2>
+                <p class="section-desc">O próximo encontro e tudo que você já planejou</p>
+            </div>
+
+            <div id="countdown-banner" class="quiz-container" style="display: none; margin-bottom: 30px;">
+                <div class="quiz-card glass" style="text-align: center;">
+                    <div class="quiz-question-number" id="countdown-label">Próximo encontro</div>
+                    <h3 class="result-title" id="countdown-title" style="margin-bottom: 8px;"></h3>
+                    <div id="countdown-timer" style="font-size: 1.6rem; font-weight: 600; color: var(--primary); letter-spacing: 1px;"></div>
+                    <div id="countdown-extra" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <div class="quiz-container">
+                <div id="dates-list"></div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Footer -->

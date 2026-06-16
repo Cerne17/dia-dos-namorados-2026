@@ -31,6 +31,7 @@ GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"
 # others longer. The client's fallback order in app.js must match this list.
 CATEGORIES = ["local", "atividade", "comida", "bebida", "clima", "sobremesa"]
 UPSTASH_LIST_KEY = "valentine:results"
+UPSTASH_CONFIRMED_KEY = "valentine:confirmed"
 
 
 def _request_gemini(model, api_key, payload):
@@ -136,8 +137,15 @@ def forward_to_discord(webhook_url, payload):
     selections = payload.get("selections", [])
     note = payload.get("note", "Nenhum detalhe adicional.")
     timestamp = payload.get("timestamp", "")
+    event_date = payload.get("eventDate")
 
     fields = []
+    if event_date:
+        fields.append({
+            "name": "📅 Data sugerida pela Duda",
+            "value": str(event_date),
+            "inline": False,
+        })
     for idx, ans in enumerate(selections):
         fields.append({
             "name": f"✨ Passo {idx + 1}: {ans.get('question')}",
@@ -176,32 +184,69 @@ def forward_to_discord(webhook_url, payload):
         return False
 
 
-def push_to_upstash(payload):
-    """Append the plan to a durable Upstash Redis list via REST. Best-effort."""
+_UPSTASH_SENTINEL = object()
+
+
+def _upstash_command(command):
+    """Run one Upstash Redis REST command (e.g. ["RPUSH", key, val]).
+    Returns the parsed `result` field, or _UPSTASH_SENTINEL on failure /
+    missing config so callers can distinguish 'error' from a real null."""
     url = os.environ.get("UPSTASH_REDIS_REST_URL")
     token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
     if not url or not token:
-        return False
-
-    value = json.dumps(payload, ensure_ascii=False)
-    command = json.dumps(["RPUSH", UPSTASH_LIST_KEY, value]).encode("utf-8")
+        return _UPSTASH_SENTINEL
 
     req = urllib.request.Request(
         url,
-        data=command,
+        data=json.dumps(command).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         },
         method="POST",
     )
-
     try:
         with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as res:
-            return res.status == 200
+            data = json.loads(res.read().decode("utf-8"))
+            return data.get("result")
     except Exception as e:
-        print(f"[UPSTASH ERROR] Falha ao persistir no Upstash: {e}", file=sys.stderr)
-        return False
+        print(f"[UPSTASH ERROR] Comando {command[0]} falhou: {e}", file=sys.stderr)
+        return _UPSTASH_SENTINEL
+
+
+def push_to_upstash(payload):
+    """Append the plan to a durable Upstash Redis list via REST. Best-effort."""
+    res = _upstash_command(["RPUSH", UPSTASH_LIST_KEY, json.dumps(payload, ensure_ascii=False)])
+    return res is not _UPSTASH_SENTINEL
+
+
+def get_history():
+    """Read all planned dates plus the currently confirmed one.
+    Returns {"plans": [...], "confirmed": {...}|None}."""
+    raw = _upstash_command(["LRANGE", UPSTASH_LIST_KEY, "0", "-1"])
+    plans = []
+    if raw not in (None, _UPSTASH_SENTINEL):
+        for item in raw:
+            try:
+                plans.append(json.loads(item))
+            except Exception:
+                pass
+
+    confirmed = None
+    confirmed_raw = _upstash_command(["GET", UPSTASH_CONFIRMED_KEY])
+    if confirmed_raw not in (None, _UPSTASH_SENTINEL):
+        try:
+            confirmed = json.loads(confirmed_raw)
+        except Exception:
+            confirmed = None
+
+    return {"plans": plans, "confirmed": confirmed}
+
+
+def set_confirmed(confirmed):
+    """Store the single confirmed upcoming date (overwrites). Returns bool."""
+    res = _upstash_command(["SET", UPSTASH_CONFIRMED_KEY, json.dumps(confirmed, ensure_ascii=False)])
+    return res is not _UPSTASH_SENTINEL
 
 
 def persist_results(payload):

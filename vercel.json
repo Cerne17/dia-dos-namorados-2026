@@ -13,6 +13,14 @@
     {
       "source": "/api/results",
       "destination": "/api/results.py"
+    },
+    {
+      "source": "/api/history",
+      "destination": "/api/history.py"
+    },
+    {
+      "source": "/api/confirm",
+      "destination": "/api/confirm.py"
     }
   ]
 }

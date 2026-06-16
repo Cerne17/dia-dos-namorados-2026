@@ -80,7 +80,7 @@ A forma mais recomendada e simples de usar a Vercel é integrando-a ao seu GitHu
 2. Clique no botão **Add New...** no canto superior direito e selecione **Project**.
 3. Importe o repositório `dudinea-valentine` que você acabou de criar.
 4. Na tela de configuração anterior ao deploy, abra a aba **Environment Variables** (Variáveis de Ambiente).
-5. Adicione as **quatro** variáveis seguintes (a chave é o nome à esquerda; o valor é o que você copiou nos passos anteriores). Para cada uma, digite a Key, cole o Value e clique em **Add**:
+5. Adicione as **seis** variáveis seguintes (a chave é o nome à esquerda; o valor é o que você copiou/definiu). Para cada uma, digite a Key, cole o Value e clique em **Add**:
    - **Variável 1**:
      - **Key**: `GEMINI_API_KEY`
      - **Value**: *[Cole sua chave obtida no Google AI Studio]*
@@ -93,11 +93,39 @@ A forma mais recomendada e simples de usar a Vercel é integrando-a ao seu GitHu
    - **Variável 4**:
      - **Key**: `UPSTASH_REDIS_REST_TOKEN`
      - **Value**: *[Cole o token (senha) copiado do Upstash]*
+   - **Variável 5** (para a seção "Os Nossos Encontros" da Duda):
+     - **Key**: `HISTORY_TOKEN`
+     - **Value**: *[Invente uma senha qualquer, ex: `duda-amor-2026`]*
+   - **Variável 6** (para você confirmar encontros como admin):
+     - **Key**: `ADMIN_TOKEN`
+     - **Value**: *[Invente OUTRA senha, diferente, ex: `miguel-secreto-xyz`]*
 6. Clique em **Deploy** no rodapé da página.
 
 > **Importante:** os nomes das variáveis (`Key`) precisam ser **exatamente** esses, em maiúsculas, sem espaços. O código procura por esses nomes específicos.
 >
-> Se faltar a chave do Gemini, o site ainda funciona usando as perguntas fixas do `content.json` (modo de segurança). Se faltarem as credenciais do Upstash ou do Discord, o envio simplesmente é pulado, sem quebrar o site — mas você não receberá/guardará os resultados. Por isso, preencha todas as quatro.
+> Comportamento se faltar alguma: sem `GEMINI_API_KEY` o site usa as perguntas fixas (modo de segurança); sem Upstash/Discord o envio é só pulado, sem quebrar; sem `HISTORY_TOKEN`/`ADMIN_TOKEN` a seção de encontros e a confirmação ficam indisponíveis, mas o planner continua funcionando.
+
+---
+
+## Os Nossos Encontros (links secretos)
+
+O site tem uma seção **"Os Nossos Encontros"** que fica **escondida por padrão** — ela só aparece pra quem abre o site com um token secreto na URL. Assim o planner é público, mas o histórico fica protegido.
+
+### Link da Duda (ver encontros + contagem regressiva)
+Monte o link com o valor do seu `HISTORY_TOKEN`:
+```
+https://SEU-SITE.vercel.app/?h=duda-amor-2026
+```
+Mande **esse** link pra ela. Com ele, a Duda vê a contagem regressiva do próximo encontro e a lista de tudo que ela já planejou (com botão de adicionar ao calendário).
+
+### Seu link de admin (confirmar a data)
+Monte com o valor do seu `ADMIN_TOKEN`:
+```
+https://SEU-SITE.vercel.app/?admin=miguel-secreto-xyz
+```
+Com esse link, além de ver tudo, aparece em cada encontro um campo de data + botão **"Confirmar encontro"**. Quando você confirma, a contagem regressiva passa a aparecer pra Duda no link dela. **Não compartilhe o link de admin com ela** — é o que te dá o poder de marcar a data.
+
+> Dica: troque os valores `duda-amor-2026` e `miguel-secreto-xyz` pelos que você realmente definiu nas variáveis 5 e 6.
 
 ---
 
@@ -141,7 +169,10 @@ Antes de publicar, você pode rodar tudo no seu computador. O servidor local usa
    DISCORD_WEBHOOK_URL=sua_url_aqui
    UPSTASH_REDIS_REST_URL=seu_endereco_aqui
    UPSTASH_REDIS_REST_TOKEN=seu_token_aqui
+   HISTORY_TOKEN=duda-amor-2026
+   ADMIN_TOKEN=miguel-secreto-xyz
    ```
+   Localmente, acesse `http://localhost:8000/?h=duda-amor-2026` (Duda) ou `http://localhost:8000/?admin=miguel-secreto-xyz` (admin) pra ver a seção de encontros.
 2. No terminal, carregue as variáveis e suba o servidor:
    ```bash
    set -a; . ./.env; set +a

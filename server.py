@@ -7,7 +7,9 @@ import sys
 # Reuse the exact same logic the Vercel handlers run, so local dev behaves
 # identically to production.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'api'))
-from _shared import generate_next_question, persist_results
+from _shared import generate_next_question, persist_results, get_history, set_confirmed
+import datetime
+from urllib.parse import urlparse, parse_qs
 
 PORT = 8000
 RESULTS_FILE = 'results.json'
@@ -38,7 +40,48 @@ class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(body).encode('utf-8'))
 
+    def do_GET(self):
+        if urlparse(self.path).path == '/api/history':
+            params = parse_qs(urlparse(self.path).query)
+            token = (params.get('token') or [None])[0]
+            valid = {t for t in (os.environ.get('HISTORY_TOKEN'), os.environ.get('ADMIN_TOKEN')) if t}
+            if not token or token not in valid:
+                self._send(403, {"error": "forbidden"})
+                return
+            try:
+                self._send(200, get_history())
+            except Exception as e:
+                self._send(500, {"error": str(e)})
+            return
+        # Static files
+        super().do_GET()
+
     def do_POST(self):
+        if self.path == '/api/confirm':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+            except Exception:
+                self._send(400, {"error": "invalid json"})
+                return
+            admin_token = os.environ.get('ADMIN_TOKEN')
+            if not admin_token or data.get('token') != admin_token:
+                self._send(403, {"error": "forbidden"})
+                return
+            if not data.get('eventDate'):
+                self._send(400, {"error": "eventDate obrigatório"})
+                return
+            confirmed = {
+                "eventDate": data.get('eventDate'),
+                "selections": data.get('selections', []),
+                "note": data.get('note', ''),
+                "confirmedAt": datetime.datetime.utcnow().isoformat() + "Z",
+            }
+            ok = set_confirmed(confirmed)
+            self._send(200 if ok else 502, {"status": "ok" if ok else "falha", "confirmed": confirmed})
+            return
+
         if self.path == '/api/results':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)

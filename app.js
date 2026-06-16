@@ -354,20 +354,26 @@ function showNoteStep() {
         <div class="quiz-question-number">Passo FINAL</div>
         <h3 class="quiz-question">Algum pedido ou detalhe especial para o Miguel?</h3>
         <textarea class="quiz-textarea" id="date-note" placeholder="Ex: Levar um casaco extra, ir com sapato confortável, levar flores... (opcional)"></textarea>
+        <label for="date-when" style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:8px; font-weight:500;">
+            <i class="fas fa-calendar-day"></i> Tem uma data em mente? (opcional — o Miguel confirma depois)
+        </label>
+        <input type="datetime-local" class="quiz-textarea" id="date-when" style="height:auto;">
         <button class="btn-restart" id="submit-date" style="width: 100%;">Finalizar Planejamento! ❤️</button>
     `;
 
     document.getElementById('submit-date').addEventListener('click', () => {
         const note = document.getElementById('date-note').value.trim();
-        showQuizResults(note);
+        const eventDate = document.getElementById('date-when').value || null;
+        showQuizResults(note, eventDate);
     });
 }
 
-async function sendResults(note) {
+async function sendResults(note, eventDate) {
     const payload = {
         recipient: "Miguel",
         timestamp: new Date().toLocaleString("pt-BR"),
         note: note || "Nenhum detalhe adicional.",
+        eventDate: eventDate || null,
         selections: userAnswers
     };
 
@@ -400,7 +406,7 @@ async function sendResults(note) {
     }
 }
 
-function showQuizResults(note) {
+function showQuizResults(note, eventDate) {
     quizProgress.style.width = '100%';
 
     // Massive heart explosions at the end!
@@ -416,14 +422,26 @@ function showQuizResults(note) {
         <div class="quiz-result-view">
             <div class="result-icon"><i class="fas fa-calendar-heart" style="color: var(--primary); animation: float 3s infinite ease-in-out;"></i></div>
             <h3 class="result-title">Encontro Planejado!</h3>
-            <p class="result-text">Seu encontro dos sonhos com destino a <strong>${localChoice}</strong> regado a <strong>${foodChoice}</strong> foi salvo e agendado com sucesso!</p>
+            <p class="result-text">Seu encontro dos sonhos com destino a <strong>${localChoice}</strong> regado a <strong>${foodChoice}</strong> foi salvo e enviado para o Miguel!</p>
             <p id="sync-status" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; font-weight: 500;"></p>
+            <div id="ics-wrap" style="margin-bottom: 16px;"></div>
             <button class="btn-restart" id="restart-planner">Planejar Outro Encontro</button>
         </div>
     `;
 
+    // Offer a calendar download when a date was suggested.
+    if (eventDate) {
+        const wrap = document.getElementById('ics-wrap');
+        const btn = document.createElement('button');
+        btn.className = 'btn-restart';
+        btn.style.background = 'rgba(255,255,255,0.06)';
+        btn.innerHTML = '<i class="fas fa-calendar-plus"></i> Adicionar ao calendário';
+        btn.addEventListener('click', () => downloadICS({ eventDate, note, selections: userAnswers }));
+        wrap.appendChild(btn);
+    }
+
     // Process and send the payload
-    sendResults(note);
+    sendResults(note, eventDate);
 
     document.getElementById('restart-planner').addEventListener('click', () => {
         currentQuestionIndex = 0;
@@ -435,6 +453,200 @@ function showQuizResults(note) {
     });
 }
 
+
+// --- Calendar download (.ics) ---
+function downloadICS(plan) {
+    const ics = PlannerCore.buildICS(plan);
+    if (!ics) return;
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'encontro.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function formatEventDate(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    try {
+        return d.toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' });
+    } catch (e) {
+        return d.toLocaleString('pt-BR');
+    }
+}
+
+// --- "Os Nossos Encontros" (history + countdown + admin confirm) ---
+let countdownInterval = null;
+
+async function initDatesSection() {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('admin') || params.get('h');
+    const isAdmin = !!params.get('admin');
+    if (!token) return; // section stays hidden without a valid link
+
+    try {
+        const res = await fetch('/api/history?token=' + encodeURIComponent(token));
+        if (!res.ok) { console.warn('Token de histórico inválido.'); return; }
+        const data = await res.json();
+        renderDatesSection(data, isAdmin, token);
+    } catch (e) {
+        console.warn('Falha ao carregar histórico:', e);
+    }
+}
+
+function renderCountdown(confirmed) {
+    const banner = document.getElementById('countdown-banner');
+    const title = document.getElementById('countdown-title');
+    const timer = document.getElementById('countdown-timer');
+    const extra = document.getElementById('countdown-extra');
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
+    if (!confirmed || !confirmed.eventDate) {
+        banner.style.display = 'block';
+        title.textContent = 'Ainda não marcado';
+        timer.textContent = '💌';
+        extra.textContent = 'O Miguel ainda vai confirmar a data do próximo encontro.';
+        return;
+    }
+
+    banner.style.display = 'block';
+    const localPick = (confirmed.selections || []).find(s => s.category === 'local');
+    title.textContent = localPick ? localPick.selectedOption : 'Nosso encontro';
+    extra.textContent = formatEventDate(confirmed.eventDate) || '';
+
+    const tick = () => {
+        const c = PlannerCore.countdown(confirmed.eventDate);
+        if (!c) { timer.textContent = ''; return; }
+        if (c.past) {
+            timer.textContent = 'É hoje (ou já rolou)! ❤️';
+            if (countdownInterval) clearInterval(countdownInterval);
+            return;
+        }
+        timer.textContent = `${c.days}d ${c.hours}h ${c.minutes}m ${c.seconds}s`;
+    };
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+}
+
+function renderDatesSection(data, isAdmin, token) {
+    const section = document.getElementById('dates-section');
+    section.style.display = 'flex';
+
+    renderCountdown(data.confirmed);
+
+    const list = document.getElementById('dates-list');
+    list.replaceChildren();
+
+    const plans = (data.plans || []).slice().reverse(); // newest first
+    if (!plans.length) {
+        const empty = document.createElement('p');
+        empty.className = 'section-desc';
+        empty.style.textAlign = 'center';
+        empty.textContent = 'Nenhum encontro planejado ainda.';
+        list.appendChild(empty);
+        return;
+    }
+
+    plans.forEach(plan => {
+        const card = document.createElement('div');
+        card.className = 'quiz-card glass';
+        card.style.marginBottom = '18px';
+
+        const localPick = (plan.selections || []).find(s => s.category === 'local');
+        const h = document.createElement('h3');
+        h.className = 'quiz-question';
+        h.style.fontSize = '1.2rem';
+        h.textContent = localPick ? localPick.selectedOption : 'Encontro planejado';
+        card.appendChild(h);
+
+        (plan.selections || []).forEach(s => {
+            const line = document.createElement('div');
+            line.style.cssText = 'color:var(--text-muted); font-size:0.9rem; margin:2px 0;';
+            line.textContent = `• ${s.selectedOption}`;
+            card.appendChild(line);
+        });
+
+        if (plan.note && plan.note !== 'Nenhum detalhe adicional.') {
+            const n = document.createElement('div');
+            n.style.cssText = 'color:var(--accent); font-size:0.85rem; font-style:italic; margin-top:8px;';
+            n.textContent = '“' + plan.note + '”';
+            card.appendChild(n);
+        }
+
+        const when = formatEventDate(plan.eventDate);
+        if (when) {
+            const w = document.createElement('div');
+            w.style.cssText = 'color:var(--text-main); font-size:0.85rem; margin-top:8px; font-weight:500;';
+            w.innerHTML = '<i class="fas fa-calendar-day"></i> ';
+            w.appendChild(document.createTextNode(when));
+            card.appendChild(w);
+
+            const ics = document.createElement('button');
+            ics.className = 'option-btn';
+            ics.style.cssText = 'margin-top:10px; width:auto;';
+            ics.innerHTML = '<i class="fas fa-calendar-plus"></i> Calendário';
+            ics.addEventListener('click', () => downloadICS(plan));
+            card.appendChild(ics);
+        }
+
+        if (isAdmin) {
+            const adminWrap = document.createElement('div');
+            adminWrap.style.cssText = 'margin-top:14px; padding-top:14px; border-top:1px solid var(--border-glass);';
+            const lbl = document.createElement('label');
+            lbl.style.cssText = 'display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:6px;';
+            lbl.textContent = 'Confirmar este encontro para:';
+            const input = document.createElement('input');
+            input.type = 'datetime-local';
+            input.className = 'quiz-textarea';
+            input.style.height = 'auto';
+            input.style.marginBottom = '8px';
+            if (plan.eventDate) input.value = String(plan.eventDate).slice(0, 16);
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'btn-restart';
+            confirmBtn.style.width = '100%';
+            confirmBtn.textContent = 'Confirmar encontro ❤️';
+            confirmBtn.addEventListener('click', async () => {
+                if (!input.value) { alert('Escolha uma data.'); return; }
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Confirmando...';
+                try {
+                    const res = await fetch('/api/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token,
+                            eventDate: input.value,
+                            selections: plan.selections,
+                            note: plan.note
+                        })
+                    });
+                    if (res.ok) {
+                        const out = await res.json();
+                        renderCountdown(out.confirmed);
+                        confirmBtn.textContent = 'Confirmado! ✅';
+                    } else {
+                        confirmBtn.textContent = 'Falhou — tente de novo';
+                        confirmBtn.disabled = false;
+                    }
+                } catch (e) {
+                    confirmBtn.textContent = 'Erro de rede';
+                    confirmBtn.disabled = false;
+                }
+            });
+            adminWrap.appendChild(lbl);
+            adminWrap.appendChild(input);
+            adminWrap.appendChild(confirmBtn);
+            card.appendChild(adminWrap);
+        }
+
+        list.appendChild(card);
+    });
+}
 
 // --- Dynamic Loading (Gemini API & Fallback) ---
 async function loadPageContent() {
@@ -466,6 +678,9 @@ async function loadPageContent() {
     } catch (error) {
         console.error("Falha ao inicializar o conteúdo da página:", error);
     }
+
+    // Reveal "Os Nossos Encontros" if a valid token is in the URL.
+    initDatesSection();
 }
 
 // Kick off on page load
