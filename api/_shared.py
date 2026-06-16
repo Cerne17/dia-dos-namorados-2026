@@ -21,7 +21,11 @@ try:
 except Exception:
     _SSL_CTX = ssl.create_default_context()
 
-GEMINI_MODEL = "gemini-2.5-flash"
+# Tried in order. If one is overloaded (HTTP 503 "high demand") or rate-limited
+# (429), we fall through to the next — failures return fast, so this is cheap
+# and greatly improves availability. The themed offline fallback covers the
+# case where every model is down.
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
 # Ordered pool of planner categories. A session uses the first N of these,
 # where N (3-6) is chosen by the client per run, so some dates are shorter and
 # others longer. The client's fallback order in app.js must match this list.
@@ -29,16 +33,30 @@ CATEGORIES = ["local", "atividade", "comida", "bebida", "clima", "sobremesa"]
 UPSTASH_LIST_KEY = "valentine:results"
 
 
+def _request_gemini(model, api_key, payload):
+    """Single Gemini call. Returns the parsed question dict or raises."""
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=8, context=_SSL_CTX) as response:
+        res_data = json.loads(response.read().decode("utf-8"))
+        text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+        return json.loads(text_response)
+
+
 def generate_next_question(api_key, previous_answers):
     """Ask Gemini for the next planner question, customized by prior picks.
 
-    Returns the parsed question dict, or None on any failure (caller should
-    fall back to the static pool in content.json)."""
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={api_key}"
-    )
-
+    Tries each model in GEMINI_MODELS until one succeeds. Returns the parsed
+    question dict, or None on total failure (caller should fall back to the
+    static pool in content.json)."""
     num_answers = len(previous_answers)
     if num_answers >= len(CATEGORIES):
         return None
@@ -104,21 +122,13 @@ def generate_next_question(api_key, previous_answers):
         },
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=15, context=_SSL_CTX) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(text_response)
-    except Exception as e:
-        print(f"[GEMINI ERROR] Erro na requisição ao Gemini API: {e}", file=sys.stderr)
-        return None
+    for model in GEMINI_MODELS:
+        try:
+            return _request_gemini(model, api_key, payload)
+        except Exception as e:
+            print(f"[GEMINI ERROR] modelo {model} falhou: {e}", file=sys.stderr)
+            continue
+    return None
 
 
 def forward_to_discord(webhook_url, payload):
